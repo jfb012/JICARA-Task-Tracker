@@ -1,7 +1,7 @@
 // Service worker: guarda la "cáscara" de la app para que abra rápido y funcione
 // como app instalada. Los datos vienen de Firebase (no se cachean aquí).
 // Si cambias archivos y no ves los cambios, sube el número de versión.
-const CACHE = 'tareas-v1';
+const CACHE = 'tareas-v2';
 const SHELL = [
   './',
   './index.html',
@@ -35,7 +35,7 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== self.location.origin) return;
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request.url, { cache: 'no-cache', credentials: 'same-origin' })
       .then((res) => {
         const copy = res.clone();
         caches.open(CACHE).then((c) => c.put(e.request, copy));

@@ -23,7 +23,7 @@
   <!-- Inicio de sesión -->
   <section id="screen-login" class="screen center" hidden>
     <div class="login-box">
-      <div class="monogram">T</div>
+      <div class="monogram">J</div>
       <h1>Tareas</h1>
       <button id="btn-login" class="btn btn-primary btn-lg">Entrar con Google</button>
       <p id="login-error" class="muted small"></p>
@@ -33,7 +33,7 @@
   <!-- Acceso no autorizado -->
   <section id="screen-denied" class="screen center" hidden>
     <div class="login-box">
-      <div class="monogram">T</div>
+      <div class="monogram">J</div>
       <h1>Acceso no autorizado</h1>
       <p class="muted">La cuenta <strong id="denied-email"></strong> no tiene permiso para usar esta app.</p>
       <button id="btn-logout-denied" class="btn">Cerrar sesión</button>
@@ -73,9 +73,18 @@
       </div>
       <select id="filter-subject" aria-label="Tema"></select>
       <select id="filter-priority" aria-label="Prioridad">
-        <option value="">Toda prioridad</option>
+        <option value="">Prioridad</option>
         <option value="Alta">Alta</option>
         <option value="Normal">Normal</option>
+      </select>
+      <select id="filter-due" aria-label="Vencimiento">
+        <option value="">Vence</option>
+        <option value="overdue">Vencidas</option>
+        <option value="today">Vencen hoy</option>
+        <option value="week">Próximos 7 días</option>
+        <option value="month">Próximos 30 días</option>
+        <option value="any">Con fecha</option>
+        <option value="none">Sin fecha</option>
       </select>
     </div>
 
