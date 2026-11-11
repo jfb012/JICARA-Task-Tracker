@@ -1,6 +1,3 @@
-[README.md](https://github.com/user-attachments/files/34699115/README.md)
-# JICARA-Task-Tracker
-Task tracker temporal para JICARA
 # Tareas — The Good Cup
 
 Tablero de tareas compartido y en vivo para Julian y Matteo. Es una herramienta temporal: sencilla, sin servidor propio y fácil de exportar.

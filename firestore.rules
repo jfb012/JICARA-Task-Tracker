@@ -1,0 +1,28 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =====================================================
+    // LISTA DE ACCESO — solo estos correos pueden leer o escribir.
+    // Para cambiar a correos corporativos, edita esta lista
+    // (y también USERS en firebase-config.js).
+    // =====================================================
+    function allowedEmails() {
+      return [
+        'julianf.barboza@gmail.com',
+        'matteocontolini@gmail.com'
+      ];
+    }
+
+    function isAllowed() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower() in allowedEmails();
+    }
+
+    match /{document=**} {
+      allow read, write: if isAllowed();
+    }
+  }
+}

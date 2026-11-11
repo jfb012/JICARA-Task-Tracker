@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Tareas</title>
+  <meta name="theme-color" content="#ffffff">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Tareas">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <!-- Pantalla de carga -->
+  <section id="screen-loading" class="screen center">
+    <div class="spinner" aria-label="Cargando"></div>
+  </section>
+
+  <!-- Inicio de sesión -->
+  <section id="screen-login" class="screen center" hidden>
+    <div class="login-box">
+      <div class="monogram">T</div>
+      <h1>Tareas</h1>
+      <button id="btn-login" class="btn btn-primary btn-lg">Entrar con Google</button>
+      <p id="login-error" class="muted small"></p>
+    </div>
+  </section>
+
+  <!-- Acceso no autorizado -->
+  <section id="screen-denied" class="screen center" hidden>
+    <div class="login-box">
+      <div class="monogram">T</div>
+      <h1>Acceso no autorizado</h1>
+      <p class="muted">La cuenta <strong id="denied-email"></strong> no tiene permiso para usar esta app.</p>
+      <button id="btn-logout-denied" class="btn">Cerrar sesión</button>
+    </div>
+  </section>
+
+  <!-- App -->
+  <section id="screen-app" class="screen" hidden>
+    <header class="topbar">
+      <div class="topbar-left">
+        <h1 class="app-title">Tareas</h1>
+        <span id="new-badge" class="new-badge" hidden></span>
+      </div>
+      <div class="topbar-right">
+        <div class="seg" id="view-toggle" role="tablist" aria-label="Vista">
+          <button data-view="board" role="tab">Tablero</button>
+          <button data-view="list" role="tab">Lista</button>
+        </div>
+        <div class="menu-wrap">
+          <button id="btn-menu" class="btn btn-icon" aria-label="Menú" aria-haspopup="true">⋯</button>
+          <div id="menu" class="menu" hidden>
+            <div class="menu-user" id="menu-user"></div>
+            <button data-action="subjects">Temas</button>
+            <button data-action="archive">Archivo</button>
+            <button data-action="export">Exportar</button>
+            <button data-action="logout">Cerrar sesión</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="filters" id="filters">
+      <div class="seg" id="filter-who">
+        <button data-who="mine">Mías</button>
+        <button data-who="other" id="filter-other">De Matteo</button>
+        <button data-who="all">Todas</button>
+      </div>
+      <select id="filter-subject" aria-label="Tema"></select>
+      <select id="filter-priority" aria-label="Prioridad">
+        <option value="">Toda prioridad</option>
+        <option value="Alta">Alta</option>
+        <option value="Normal">Normal</option>
+      </select>
+    </div>
+
+    <main id="main"></main>
+
+    <button id="fab" class="fab" aria-label="Nueva tarea">+</button>
+  </section>
+
+  <!-- Contenedor de modales / hojas -->
+  <div id="overlay" class="overlay" hidden></div>
+  <div id="popover-root"></div>
+  <div id="toast" class="toast" hidden></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
