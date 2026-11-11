@@ -367,7 +367,7 @@ function listMobile(tasks) {
 
 const LIST_COLS = [
   ['title', 'Título'], ['status', 'Estado'], ['subject', 'Tema'], ['assignee', 'Responsable'],
-  ['dueDate', 'Vence'], ['priority', 'Prioridad'], ['subs', 'Subtareas'], ['createdAt', 'Creada']
+  ['dueDate', 'Para'], ['priority', 'Prioridad'], ['subs', 'Subtareas'], ['createdAt', 'Creada']
 ];
 function listDesktop(tasks) {
   const { key, dir } = S.listSort;
@@ -564,7 +564,7 @@ function openQuickAdd() {
       <div class="seg seg-full" data-assignee>${ASSIGNEES.map((a) => `<button type="button" data-a="${a}" class="${a === S.me ? 'on' : ''}">${a}</button>`).join('')}</div>
     </div>
     <label class="field"><span>Tema</span><select class="input" name="subject" required><option value="">Elige un tema</option>${subjOpts}</select></label>
-    <label class="field"><span>Vence (opcional)</span><input class="input" type="date" name="dueDate"></label>
+    <label class="field"><span>Para (opcional)</span><input class="input" type="date" name="dueDate"></label>
     <p class="form-error" hidden></p>
     <button class="btn btn-primary btn-lg btn-block" type="submit">Guardar</button>
   </form>`, 'quick');
@@ -636,7 +636,7 @@ function openDetail(id) {
       <label class="field"><span>Responsable</span><select class="input" data-field="assignee">${opt(ASSIGNEES)}</select></label>
       <label class="field"><span>Tema</span><select class="input" data-field="subject"></select></label>
       <label class="field"><span>Prioridad</span><select class="input" data-field="priority">${opt(PRIORITIES)}</select></label>
-      <label class="field"><span>Vence</span><input class="input" type="date" data-field="dueDate"><small class="due-label"></small></label>
+      <label class="field"><span>Para</span><input class="input" type="date" data-field="dueDate"><small class="due-label"></small></label>
       <label class="field"><span>Asignada el</span><input class="input" type="date" data-field="assignedAt"></label>
       <div class="field"><span>Asignada por</span><div class="static" data-static="assignedBy"></div></div>
       <div class="field"><span>Creada el</span><div class="static" data-static="createdAt"></div></div>
@@ -761,7 +761,7 @@ function fillDetail(first = false) {
       <input type="checkbox" data-sk="done" ${s.done ? 'checked' : ''} aria-label="Hecha">
       <input class="input sub-text" data-sk="text" value="${esc(s.text)}">
       <select class="input sub-who" data-sk="assignee" aria-label="Responsable">${opt(['', 'Julian', 'Matteo'], s.assignee || '', ['—', 'Julian', 'Matteo'])}</select>
-      <input class="input sub-date" type="date" data-sk="dueDate" value="${esc(s.dueDate || '')}" aria-label="Vence">
+      <input class="input sub-date" type="date" data-sk="dueDate" value="${esc(s.dueDate || '')}" aria-label="Para">
       <button class="btn btn-icon sub-del" data-sub-del aria-label="Eliminar subtarea">✕</button>
     </div>`).join('');
   }
@@ -771,7 +771,7 @@ function shareWhatsApp(t) {
   if (!t) return;
   const link = location.origin + location.pathname + '#/task/' + t.id;
   const parts = [`Nueva tarea: ${t.title}`, t.assignee];
-  if (t.dueDate) parts.push('vence ' + fmtShort(t.dueDate));
+  if (t.dueDate) parts.push('para ' + fmtShort(t.dueDate));
   const text = parts.join(' · ') + ' — ' + link;
   window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener');
 }
@@ -859,7 +859,7 @@ function exportAll() {
   const tasks = [...S.tasks.values()].sort(defaultSort);
   const subjName = (id) => subjectById(id)?.name || '';
   const header = ['tipo', 'tarea_id', 'tarea_titulo', 'subtarea_id', 'texto', 'hecha', 'estado', 'en_espera_de',
-    'responsable', 'tema', 'prioridad', 'vence', 'creada_el', 'asignada_el', 'asignada_por', 'terminada_el', 'archivada', 'notas'];
+    'responsable', 'tema', 'prioridad', 'para', 'creada_el', 'asignada_el', 'asignada_por', 'terminada_el', 'archivada', 'notas'];
   const rows = [header];
   for (const t of tasks) {
     rows.push(['tarea', t.id, t.title, '', t.title, '', t.status, t.waitingOn || '', t.assignee, subjName(t.subject),
