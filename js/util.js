@@ -27,6 +27,12 @@ const shortFmt = new Intl.DateTimeFormat('es', { timeZone: TZ, weekday: 'short',
 
 /** Fecha de hoy en Costa Rica, 'YYYY-MM-DD' */
 export const todayYMD = () => ymdFmt.format(new Date());
+/** 'YYYY-MM-DD' + n días → 'YYYY-MM-DD' */
+export function addDaysYMD(ymd, n) {
+  const d = new Date(ymd + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
 /** Date/Timestamp → 'YYYY-MM-DD' en Costa Rica */
 export const toYMD = (d) => d ? ymdFmt.format(toDate(d)) : '';
 export const toDate = (v) => !v ? null : (v.toDate ? v.toDate() : (v instanceof Date ? v : new Date(v)));

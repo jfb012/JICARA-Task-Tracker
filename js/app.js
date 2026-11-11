@@ -6,7 +6,7 @@ import {
 import { USERS } from '../firebase-config.js';
 import {
   STATUSES, STATUS_VAR, ASSIGNEES, PRIORITIES, ARCHIVE_DAYS, SEED_SUBJECTS,
-  todayYMD, toYMD, toDate, ymdToDate, fmtShort, isOverdue, esc, uid, download, csvCell, lsGet, lsSet
+  todayYMD, addDaysYMD, toYMD, toDate, ymdToDate, fmtShort, isOverdue, esc, uid, download, csvCell, lsGet, lsSet
 } from './util.js';
 
 // ---------------------------------------------------------------- estado
@@ -15,7 +15,7 @@ const S = {
   tasks: new Map(), subjects: [],
   tasksLoaded: false, subjectsLoaded: false,
   prevSeen: new Date(0), seenLocal: new Set(),
-  filters: { who: lsGet('f-who', 'all'), subject: '', priority: '' },
+  filters: { who: lsGet('f-who', 'all'), subject: '', priority: '', due: '' },
   listSort: { key: 'default', dir: 1 },
   collapsed: { 'Terminado': true },
   boardTab: 0, dragging: false, pendingRender: false,
@@ -187,10 +187,10 @@ function setAssignee(id, assignee) {
   return updateTask(id, { assignee, assignChangedAt: serverTimestamp(), assignChangedBy: S.me });
 }
 
-async function createTask({ title, assignee, subject }) {
+async function createTask({ title, assignee, subject, dueDate = '' }) {
   const ref = await addDoc(collection(db, 'tasks'), {
     title, notes: '', assignee, subject,
-    status: 'Pendiente', waitingOn: '', dueDate: '', priority: 'Normal',
+    status: 'Pendiente', waitingOn: '', dueDate, priority: 'Normal',
     assignedAt: serverTimestamp(), assignedBy: S.me,
     completedAt: null, archived: false, restoredAt: null, subtasks: [],
     createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
@@ -216,8 +216,23 @@ function visibleTasks() {
     if (f.who === 'other' && t.assignee !== S.other && t.assignee !== 'Ambos') return false;
     if (f.subject && t.subject !== f.subject) return false;
     if (f.priority && (t.priority || 'Normal') !== f.priority) return false;
+    if (f.due && !matchDue(t, f.due)) return false;
     return true;
   });
+}
+
+// Filtro por fecha de vencimiento
+function matchDue(t, due) {
+  const d = t.dueDate || '';
+  const today = todayYMD();
+  if (due === 'none') return !d;
+  if (!d) return false;
+  if (due === 'overdue') return isOverdue(t);
+  if (due === 'today') return d === today;
+  if (due === 'week') return d >= today && d <= addDaysYMD(today, 7);
+  if (due === 'month') return d >= today && d <= addDaysYMD(today, 30);
+  if (due === 'any') return true;
+  return true;
 }
 
 function defaultSort(a, b) {
@@ -233,11 +248,12 @@ function defaultSort(a, b) {
 function syncFilterUI() {
   const sel = $('#filter-subject');
   const cur = S.filters.subject;
-  sel.innerHTML = '<option value="">Todos los temas</option>' +
+  sel.innerHTML = '<option value="">Tema</option>' +
     S.subjects.map((s) => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('');
   sel.value = S.subjects.some((s) => s.id === cur) ? cur : '';
   S.filters.subject = sel.value;
   $('#filter-priority').value = S.filters.priority;
+  $('#filter-due').value = S.filters.due;
   $$('#filter-who button').forEach((b) => b.classList.toggle('on', b.dataset.who === S.filters.who));
   $$('#view-toggle button').forEach((b) => b.classList.toggle('on', b.dataset.view === currentView()));
 }
@@ -249,6 +265,7 @@ $('#filter-who').addEventListener('click', (e) => {
 });
 $('#filter-subject').addEventListener('change', (e) => { S.filters.subject = e.target.value; render(); });
 $('#filter-priority').addEventListener('change', (e) => { S.filters.priority = e.target.value; render(); });
+$('#filter-due').addEventListener('change', (e) => { S.filters.due = e.target.value; render(); });
 $('#view-toggle').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
   lsSet(viewKey(), b.dataset.view); syncFilterUI(); render();
@@ -306,6 +323,7 @@ function card(t) {
       <span class="assignee">${esc(t.assignee)}</span>
       ${t.dueDate ? `<span class="due${od ? ' red' : ''}">${od ? 'Vencida · ' : ''}${esc(fmtShort(t.dueDate))}</span>` : ''}
       ${subProgress(t)}
+      ${t.createdAt ? `<span class="created">Creada ${esc(fmtShort(t.createdAt))}</span>` : ''}
     </div>
   </article>`;
 }
@@ -349,7 +367,7 @@ function listMobile(tasks) {
 
 const LIST_COLS = [
   ['title', 'Título'], ['status', 'Estado'], ['subject', 'Tema'], ['assignee', 'Responsable'],
-  ['dueDate', 'Vence'], ['priority', 'Prioridad'], ['subs', 'Subtareas']
+  ['dueDate', 'Vence'], ['priority', 'Prioridad'], ['subs', 'Subtareas'], ['createdAt', 'Creada']
 ];
 function listDesktop(tasks) {
   const { key, dir } = S.listSort;
@@ -359,6 +377,7 @@ function listDesktop(tasks) {
       : key === 'subs' ? (t.subtasks || []).length
       : key === 'dueDate' ? (t.dueDate || '9999')
       : key === 'priority' ? (t.priority === 'Alta' ? 0 : 1)
+      : key === 'createdAt' ? (toDate(t.createdAt)?.getTime() || 0)
       : String(t[key] || '').toLowerCase();
     tasks = [...tasks].sort((a, b) => { const x = val(a), y = val(b); return (x < y ? -1 : x > y ? 1 : 0) * dir || defaultSort(a, b); });
   }
@@ -375,10 +394,11 @@ function listDesktop(tasks) {
       <td class="${od ? 'due red' : 'due'}">${t.dueDate ? (od ? 'Vencida · ' : '') + esc(fmtShort(t.dueDate)) : '—'}</td>
       <td>${t.priority === 'Alta' ? '<span class="prio">▲ Alta</span>' : 'Normal'}</td>
       <td>${st.length ? `${st.filter((x) => x.done).length}/${st.length}` : '—'}</td>
+      <td class="muted">${t.createdAt ? esc(fmtShort(t.createdAt)) : '—'}</td>
     </tr>`;
   }).join('');
   return `<div class="table-wrap"><div class="table-tools">${key !== 'default' ? '<button class="link" data-sort="default">Orden por defecto (vencidas primero)</button>' : '<span class="muted small">Vencidas primero, luego por fecha</span>'}</div>
-    <table class="list"><thead><tr>${head}</tr></thead><tbody>${rows || `<tr><td colspan="7">${emptyMsg}</td></tr>`}</tbody></table></div>`;
+    <table class="list"><thead><tr>${head}</tr></thead><tbody>${rows || `<tr><td colspan="8">${emptyMsg}</td></tr>`}</tbody></table></div>`;
 }
 
 // ---------------------------------------------------------------- eventos de la vista
@@ -544,6 +564,7 @@ function openQuickAdd() {
       <div class="seg seg-full" data-assignee>${ASSIGNEES.map((a) => `<button type="button" data-a="${a}" class="${a === S.me ? 'on' : ''}">${a}</button>`).join('')}</div>
     </div>
     <label class="field"><span>Tema</span><select class="input" name="subject" required><option value="">Elige un tema</option>${subjOpts}</select></label>
+    <label class="field"><span>Vence (opcional)</span><input class="input" type="date" name="dueDate"></label>
     <p class="form-error" hidden></p>
     <button class="btn btn-primary btn-lg btn-block" type="submit">Guardar</button>
   </form>`, 'quick');
@@ -564,7 +585,7 @@ function openQuickAdd() {
     if (!title || !subject) { err.hidden = false; err.textContent = 'Título y tema son obligatorios.'; return; }
     form.querySelector('[type=submit]').disabled = true;
     try {
-      await createTask({ title, assignee, subject });
+      await createTask({ title, assignee, subject, dueDate: form.elements.dueDate.value || '' });
       closeModal(m);
       toast('Tarea creada');
     } catch (ex) {
@@ -618,6 +639,7 @@ function openDetail(id) {
       <label class="field"><span>Vence</span><input class="input" type="date" data-field="dueDate"><small class="due-label"></small></label>
       <label class="field"><span>Asignada el</span><input class="input" type="date" data-field="assignedAt"></label>
       <div class="field"><span>Asignada por</span><div class="static" data-static="assignedBy"></div></div>
+      <div class="field"><span>Creada el</span><div class="static" data-static="createdAt"></div></div>
       <div class="field completed-field"><span>Terminada el</span><div class="static" data-static="completedAt"></div></div>
     </div>
     <section class="subtasks">
@@ -722,6 +744,7 @@ function fillDetail(first = false) {
   autoGrow($('.title-input', m));
   toggleWaiting(m, $('[data-field=status]', m).value);
   $('[data-static=assignedBy]', m).textContent = t.assignedBy || '—';
+  $('[data-static=createdAt]', m).textContent = t.createdAt ? fmtShort(t.createdAt) + ' ' + toYMD(t.createdAt).slice(0, 4) : '—';
   $('.completed-field', m).hidden = !t.completedAt;
   $('[data-static=completedAt]', m).textContent = t.completedAt ? fmtShort(t.completedAt) : '';
   const od = isOverdue(t);
@@ -836,15 +859,15 @@ function exportAll() {
   const tasks = [...S.tasks.values()].sort(defaultSort);
   const subjName = (id) => subjectById(id)?.name || '';
   const header = ['tipo', 'tarea_id', 'tarea_titulo', 'subtarea_id', 'texto', 'hecha', 'estado', 'en_espera_de',
-    'responsable', 'tema', 'prioridad', 'vence', 'asignada_el', 'asignada_por', 'terminada_el', 'archivada', 'notas'];
+    'responsable', 'tema', 'prioridad', 'vence', 'creada_el', 'asignada_el', 'asignada_por', 'terminada_el', 'archivada', 'notas'];
   const rows = [header];
   for (const t of tasks) {
     rows.push(['tarea', t.id, t.title, '', t.title, '', t.status, t.waitingOn || '', t.assignee, subjName(t.subject),
-      t.priority || 'Normal', t.dueDate || '', toYMD(t.assignedAt), t.assignedBy || '', toYMD(t.completedAt),
+      t.priority || 'Normal', t.dueDate || '', toYMD(t.createdAt), toYMD(t.assignedAt), t.assignedBy || '', toYMD(t.completedAt),
       t.archived ? 'sí' : 'no', t.notes || '']);
     for (const s of t.subtasks || []) {
       rows.push(['subtarea', t.id, t.title, s.id, s.text, s.done ? 'sí' : 'no', '', '', s.assignee || '', subjName(t.subject),
-        '', s.dueDate || '', '', '', '', '', '']);
+        '', s.dueDate || '', '', '', '', '', '', '']);
     }
   }
   const csv = '﻿' + rows.map((r) => r.map(csvCell).join(',')).join('\r\n');
