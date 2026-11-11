@@ -5,12 +5,12 @@
 // Estas claves son públicas por diseño; la seguridad está en firestore.rules.
 // =========================================================
 export const firebaseConfig = {
-  apiKey: "PEGAR_AQUI",
-  authDomain: "PEGAR_AQUI.firebaseapp.com",
-  projectId: "PEGAR_AQUI",
-  storageBucket: "PEGAR_AQUI.appspot.com",
-  messagingSenderId: "PEGAR_AQUI",
-  appId: "PEGAR_AQUI"
+  apiKey: "AIzaSyC3wnYq-20yWQiBljzcSRWIdQ9mFrygbrE",
+  authDomain: "jicara-tareas.firebaseapp.com",
+  projectId: "jicara-tareas",
+  storageBucket: "jicara-tareas.firebasestorage.app",
+  messagingSenderId: "1072858944562",
+  appId: "1:1072858944562:web:ff768cd8c6867ff2b0d82b"
 };
 
 // =========================================================
